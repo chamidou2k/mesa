@@ -6,6 +6,7 @@ Large Language Models (LLMs) demand vast computing resources and incur significa
 - Gain comprehensive visibility across every stage of the inference and training pipeline  
 - Identify computational and memory hot-spots  
 - Rapidly assess trade-offs between throughput, cost, accuracy, and more  
+
 This tool will enable interactive “what-if” exploration of deployment strategies—such as parallelism and concurrency—revealing where and how optimizations can deliver the greatest ROI.
 
 ---
@@ -161,6 +162,8 @@ VITE v5.4.10  ready in 270 ms
 
 ### Add Training Pipeline Support
 - Expand to cover training pipeline.
+
+---
 
 ## Note for Tool Usage 
 The primary goal of this tool is to explore a general framework for evaluating the LLM pipeline, focusing on latency, memory footprint, and FLOPs analysis,
