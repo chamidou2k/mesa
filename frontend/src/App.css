@@ -1,0 +1,154 @@
+#root {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.top_container {
+    display: grid;
+    grid-template-columns: 250px 60% 40%;
+    height: 100%;
+    width: 100%;
+}
+
+.config_pane {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid black;
+    overflow: auto;
+}
+
+.graph_pane_old {
+    //display: flex;
+    position: relative;
+    flex-direction: column;
+    height: 100%;
+    background-color: #e0e0e0;
+    padding: 20px;
+    overflow: auto;
+    border: 1px solid black;
+}
+.graph_pane {
+    position: relative;
+    flex-direction: column;
+    height: 100%;
+    background-color: #e0e0e0;
+    padding: 20px;
+    overflow: auto;
+    border: 1px solid black;
+}
+.info_pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid black;
+    overflow: auto;
+}
+
+.graph_pane::-webkit-scrollbar {
+    width: 10px;
+    background-color: #f1f1f1;
+}
+
+.graph_pane::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 5px;
+}
+
+.graph_header {
+    text-align: center;
+    justify-content: center;
+    height: 24px;
+}
+.tabs-container {
+  font-family: monospace;
+  font-size: 11px;
+  color: #2d5c2a;
+  background: #f8fffa;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(178, 216, 176, 0.2);
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #c4dcc1;
+}
+
+.tab-button {
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  color: #3a5639;
+  background: #f0fff0;
+}
+
+.tab-button:hover {
+  background: #e3f3e1;
+}
+
+.tab-button.active {
+  background: #d4eed0;
+  border-color: #b2d8b0;
+  box-shadow: inset 0 2px 4px rgba(178, 216, 176, 0.1);
+}
+
+.tab-content {
+  padding: 8px;
+  background: linear-gradient(180deg, rgba(244, 255, 240, 0.5) 0%, rgba(240, 255, 240, 0.3) 100%);
+}
+
+.tab-title {
+  font-size: 10px;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: #3a5639;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #b2d8b0;
+}
+
+@media (max-width: 768px) {
+  .tab-buttons {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .tab-button {
+    flex: 1 0 45%;
+    text-align: center;
+  }
+}
+
+.tab-header {
+  padding: 6px 12px;
+  border: none;
+  background: #f0f0f0;
+  cursor: pointer;
+  border-radius: 3px 3px 0 0;
+  transition: all 0.2s; 
+  font-size: 13px; 
+  margin-right: 4px;
+  line-height: 1.2; 
+}
+
+.tab-header.active {
+  background: #1890ff;
+  color: white;
+  transform: translateY(1px); 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+}
+
+.tab-content {
+    flex: 1;
+    height: 100%;
+    overflow: auto;
+    padding: 12px; 
+    border: 1px solid #eee;
+    border-radius: 0 3px 3px 3px;
+}
+

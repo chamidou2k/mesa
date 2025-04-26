@@ -1,0 +1,585 @@
+{
+    "model_metadata": {
+        "ir_version": 8,
+        "producer_name": "pytorch",
+        "producer_version": "2.3.0",
+        "domain": "",
+        "model_version": 0,
+        "doc_string": ""
+    },
+    "graph": {
+        "nodes": [
+            {
+                "name": "input_embed",
+                "op_type": "ParallelEmbedding",
+		"combo": "Input",
+		"formula": "ParallelEmbedding[vocab_size, hidden_size]",
+                "inputs": [],
+                "outputs": ["emb_out"]
+            },
+            {
+                "name": "layer_input",
+                "op_type": "Dummy",
+		"combo": "ATTN",
+                "inputs": ["input_embed"],
+                "outputs": []
+            },
+            {
+                "name": "attn_norm",
+                "op_type": "RMSNorm",
+		"combo": "ATTN",
+		"formula": "RMSNorm(hidden_size, norm_eps)",
+                "inputs": [
+                    "layer_input"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "q_down_linear",
+                "op_type": "Linear",
+		"combo": "ATTN",
+		"formula": "wq_a(x), wq_a = Linear[hidden_size, q_lora_rank]",
+                "inputs": [
+                    "attn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "q_norm",
+                "op_type": "RMSNorm",
+		"combo": "ATTN",
+		"formula": "q_norm(x), q_norm = RMSNorm(q_lora_rank)",
+                "inputs": [
+                    "q_down_linear"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "q_up_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "ATTN",
+		"formula": "wq(x), wq = ColumnParallelLinear[q_lora_rank, num_attention_heads*(qk_nope_head_dim + qk_rope_head_dim)]",
+                "inputs": [
+                    "q_norm"
+                ],
+                "outputs": [
+                ]
+            },
+
+	    {
+                "name": "q_split",
+                "op_type": "split",
+		"combo": "ATTN",
+		"formula": "q_nope, q_pe  = split[qk_nope_head_dim, qk_rope_head_dim]",
+                "inputs": [
+                    "q_up_linear"
+                ],
+                "outputs": [
+		    "q_nope",
+		    "q_rope"
+                ]
+            },	    
+	    {
+                "name": "q_rope",
+                "op_type": "RoPE",
+		"combo": "ATTN",
+		"formula": "q_pe,  q_pe = RoPE(q_pe)",
+                "inputs": [
+                    "q_split"
+                ],
+                "outputs": [
+                ]
+            },	    
+	    {
+                "name": "q_nope",
+                "op_type": "concat",
+		"formula": "",
+		"combo": "ATTN",
+                "inputs": [
+                    "q_split", "q_rope"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "kv_down_linear",
+                "op_type": "Linear",
+		"combo": "ATTN",
+		"formula": "Linear[hidden_size, kv_lora_rank + qk_rope_head_dim]",
+                "inputs": [
+                    "attn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+	    {
+                "name": "kv_r_split",
+                "op_type": "split",
+		"combo": "ATTN",
+		"formula": "kv, k_pe = split[kv_lora_rank, qk_rope_head_dim]",
+                "inputs": [
+                    "kv_down_linear"
+                ],
+                "outputs": [
+		    "kv_norm",
+		    "k_rope"
+                ]
+            },	    
+	    {
+                "name": "k_rope",
+                "op_type": "RoPE",
+		"combo": "ATTN",
+		"formula": "RoPE(k_pe)",
+                "inputs": [
+                    "kv_r_split"
+                ],
+                "outputs": [
+                ]
+            },
+	    {
+                "name": "kv_norm",
+                "op_type": "RMSNorm",
+		"combo": "ATTN",
+		"formula": "RMSNorm(kv)",
+                "inputs": [
+                    "kv_r_split"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "kv_up_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "ATTN",
+		"formula": "ColumnParallelLinear[kv_lora_rank, num_attention_heads * (qk_nope_head_dim + v_head_dim)]",
+                "inputs": [
+                    "kv_norm"
+                ],
+                "outputs": [
+                ]
+            },
+	    {
+                "name": "kv_split",
+                "op_type": "split",
+		"combo": "ATTN",
+		"formula": "k_nope, v = split[qk_nope_head_dim, v_head_dim]",
+                "inputs": [
+                    "kv_up_linear"
+                ],
+                "outputs": [
+		    "k",
+		    "v"
+                ]
+            },
+	    {
+                "name": "v",
+                "op_type": "Dummy",
+		"combo": "ATTN",
+                "inputs": [
+                    "kv_split"
+                ],
+                "outputs": [
+
+                ]
+            },	
+	    
+	    {
+                "name": "k",
+                "op_type": "concat",
+		"combo": "ATTN",
+		"formula": "torch.cat(k_nope,k_pe)",
+                "inputs": [
+		    "k_rope",
+		    "kv_split"
+                ],
+                "outputs": [
+                ]
+            },
+	    {
+                "name": "qk_einsum",
+                "op_type": "einsum",
+		"combo": "ATTN",
+		"formula": "einsum(q, k)",
+                "inputs": [
+                    "q_nope",
+		    "k"
+                ],
+                "outputs": [
+                ]
+            },
+
+	    {
+                "name": "qk_softmax",
+                "op_type": "Softmax",
+		"combo": "ATTN",
+		"formula": "softmax()",
+                "inputs": [
+                    "qk_einsum"
+                ],
+                "outputs": [
+                ]
+            },
+	    {
+                "name": "qkv_einsum",
+                "op_type": "einsum",
+		"combo": "ATTN",
+		"formula": "einsum(qk, v)",
+                "inputs": [
+                    "qk_softmax",
+		    "v"
+                ],
+                "outputs": [
+                ]
+            },
+
+	    {
+                "name": "o_linear",
+                "op_type": "RowParallelLinear",
+		"combo": "ATTN",
+		"formula": "RowParallelLinear[num_attention_heads * v_head_dim, hidden_size]",
+                "inputs": [
+                    "qkv_einsum"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "attn_residual",
+                "op_type": "Add",
+		"combo": "ATTN",
+		"formula": "x + MLA(x)",
+                "inputs": [
+                    "layer_input",
+		    "o_linear"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "ffn_norm",
+                "op_type": "RMSNorm",
+		"combo": "FFN",
+		"formula": "RMSNorm(hidden_size)",		
+                "inputs": [
+                    "attn_residual"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "mlp_w1_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "Dense-MLP",
+		"formula": "ColumnParallelLinear[hidden_size, intermediate_size]",		
+                "inputs": [
+                    "ffn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "mlp_w3_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "Dense-MLP",
+		"formula": "ColumnParallelLinear[hidden_size, intermediate_size]",		
+                "inputs": [
+                    "ffn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "mlp_act",
+                "op_type": "Silu",
+		"combo": "Dense-MLP",
+		"formula": "Silu()",		
+                "inputs": [
+                    "mlp_w1_linear"
+                ],
+                "outputs": [
+                ]
+            },
+	    
+            {
+                "name": "mlp_elmul",
+                "op_type": "Elmul",
+		"combo": "Dense-MLP",
+		"formula": "ElementMul",
+                "inputs": [
+		    "mlp_act",
+		    "mlp_w3_linear"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "mlp_w2_linear",
+                "op_type": "RowParallelLinear",
+		"combo": "Dense-MLP",
+		"formula": "RowParallelLinear[intermediate_size, hidden_size]",		
+                "inputs": [
+                    "mlp_elmul"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "mlp_residual",
+                "op_type": "Add",
+		"combo": "Dense-MLP",
+                "inputs": [
+		    "mlp_w2_linear",
+		    "attn_residual"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "moe_gate",
+                "op_type": "Router",
+		"combo": "MoE",
+                "inputs": [
+                    "ffn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+	    
+            {
+                "name": "shared_input",
+                "op_type": "Dummy",
+		"combo": "Shared",
+                "inputs": [
+                    "moe_gate"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "routed_input",
+                "op_type": "Dummy",
+		"combo": "Routed",
+                "inputs": [
+                    "moe_gate"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "shared_w1_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "Shared",
+		"formula": "ColumnParallelLinear[hidden_size, moe_intermediate_size]",		
+                "inputs": [
+                    "shared_input"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "shared_w3_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "Shared",
+		"formula": "ColumnParallelLinear[hidden_size, moe_intermediate_size]",		
+                "inputs": [
+                    "shared_input"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "shared_act",
+                "op_type": "Silu",
+		"combo": "Shared",
+		"formula": "Silu()",		
+                "inputs": [
+                    "shared_w1_linear"
+                ],
+                "outputs": [
+                ]
+            },
+	    
+            {
+                "name": "shared_elmul",
+                "op_type": "Elmul",
+		"combo": "Shared",
+		"formula": "ElementMul",
+                "inputs": [
+		    "shared_act",
+		    "shared_w3_linear"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "shared_w2_linear",
+                "op_type": "RowParallelLinear",
+		"combo": "Shared",
+		"formula": "RowParallelLinear[moe_intermediate_size, hidden_size]",		
+                "inputs": [
+                    "shared_elmul"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "shared_residual",
+                "op_type": "Add",
+		"combo": "Shared",
+                "inputs": [
+		    "shared_w2_linear",
+		    "shared_input"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "routed_w1_linear",
+                "op_type": "Linear",
+		"combo": "Routed",
+		"formula": "Linear[hidden_size, moe_intermediate_size]",		
+                "inputs": [
+                    "routed_input"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "routed_w3_linear",
+                "op_type": "Linear",
+		"combo": "Routed",
+		"formula": "Linear[hidden_size, moe_intermediate_size]",		
+                "inputs": [
+                    "routed_input"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "routed_act",
+                "op_type": "Silu",
+		"combo": "Routed",
+		"formula": "Silu()",		
+                "inputs": [
+                    "routed_w1_linear"
+                ],
+                "outputs": [
+                ]
+            },
+	    
+            {
+                "name": "routed_elmul",
+                "op_type": "Elmul",
+		"combo": "Routed",
+		"formula": "ElementMul",
+                "inputs": [
+		    "routed_act",
+		    "routed_w3_linear"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "routed_w2_linear",
+                "op_type": "Linear",
+		"combo": "Routed",
+		"formula": "Linear[moe_intermediate_size, hidden_size]",		
+                "inputs": [
+                    "routed_elmul"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "routed_residual",
+                "op_type": "Add",
+		"combo": "Routed",
+                "inputs": [
+		    "routed_w2_linear",
+		    "routed_input"
+                ],
+                "outputs": [
+                ]
+            },
+
+	    
+	    {
+                "name": "routed_all_reduce",
+                "op_type": "all_reduce",
+		"combo": "MoE",
+                "inputs": [
+                    "routed_residual"
+		    
+                ],
+                "outputs": [
+                ]
+            },
+	    {
+                "name": "shared_routed_concat",
+                "op_type": "concat",
+		"combo": "MoE",
+                "inputs": [
+                    "routed_all_reduce",
+		    "shared_residual"
+		    
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "moe_residual",
+                "op_type": "Add",
+		"combo": "MoE",
+                "inputs": [
+                    "shared_routed_concat",
+		    "attn_residual"
+		    
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "layer_output",
+                "op_type": "Dummy",
+		"combo": "FFN",
+                "inputs": [
+		    "mlp_residual",
+                    "moe_residual"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "output",
+                "op_type": "ColumnParallelLinear",
+		"combo": "Output",
+                "formula": "ColumnParallelLinear[hidden_size, vocab_size]",
+                "inputs": [
+		    "layer_output"
+                ],
+                "outputs": [
+                ]
+            }
+	    
+	]
+    }
+}

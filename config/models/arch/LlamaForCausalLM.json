@@ -1,0 +1,269 @@
+{
+    "model_metadata": {
+        "ir_version": 8,
+        "producer_name": "pytorch",
+        "producer_version": "2.3.0",
+        "domain": "",
+        "model_version": 0,
+        "doc_string": ""
+    },
+    "graph": {
+        "nodes": [
+            {
+                "name": "input_embed",
+		"op_type": "ParallelEmbedding",
+                "formula": "ParallelEmbedding[vocab_size, hidden_size]",
+		"combo": "Input",
+                "inputs": [],
+                "outputs": ["emb_out"]
+            },
+            {
+                "name": "layer_start",
+                "op_type": "Dummy",
+		"combo": "ATTN",
+                "inputs": ["input_embed"],
+                "outputs": []
+            },
+            {
+                "name": "attn_norm",
+                "op_type": "RMSNorm",
+		"combo": "ATTN",
+		"formula": "RMSNorm(hidden_size, norm_eps)",
+                "inputs": [
+                    "layer_start"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "q_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "ATTN",
+		"formula": "wq(x), wq = ColumnParallelLinear[hidden_size, num_attention_heads * hidden_size / num_attention_heads]",
+                "inputs": [
+                    "attn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "k_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "ATTN",
+		"formula": "wk(x), wk = ColumnParallelLinear[hidden_size, num_key_value_heads * hidden_size / num_attention_heads]",
+                "inputs": [
+                    "attn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "v_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "ATTN",
+		"formula": "wv(x), wv = ColumnParallelLinear[hidden_size, num_key_value_heads * hidden_size / num_attention_heads]",
+                "inputs": [
+                    "attn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+
+	    {
+                "name": "q_rope",
+                "op_type": "RoPE",
+		"combo": "ATTN",
+		"formula": "q_pe,  q_pe = RoPE(q_pe)",
+                "inputs": [
+                    "q_linear"
+                ],
+                "outputs": [
+                ]
+            },	    
+	    {
+                "name": "k_rope",
+                "op_type": "RoPE",
+		"combo": "ATTN",
+		"formula": "k_pe,  q_pe = RoPE(q_pe)",
+                "inputs": [
+                    "k_linear"
+                ],
+                "outputs": [
+                ]
+            },	    
+	    {
+                "name": "qk_matmul",
+                "op_type": "AttnScore",
+		"combo": "ATTN",
+		"formula": "matmul(q, k)/sqrt(d)",
+                "inputs": [
+                    "q_rope",
+		    "k_rope"
+                ],
+                "outputs": [
+                ]
+            },	    
+	    {
+                "name": "qk_softmax",
+                "op_type": "Softmax",
+		"combo": "ATTN",
+		"formula": "softmax()",
+                "inputs": [
+                    "qk_matmul"
+                ],
+                "outputs": [
+                ]
+            },	    
+            {
+                "name": "sv_matmul",
+                "op_type": "AttnScore",
+		"combo": "ATTN",
+		"formula": "matmul(s, v)/sqrt(d)",
+                "inputs": [
+                    "qk_softmax",
+		    "v_linear"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "o_linear",
+                "op_type": "RowParallelLinear",
+		"combo": "ATTN",
+		"formula": "RowParallelLinear[num_attention_heads * hidden_size / num_attention_heads, hidden_size]",
+                "inputs": [
+                    "sv_matmul"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "attn_residual",
+                "op_type": "Add",
+		"combo": "ATTN",
+		"formula": "",
+                "inputs": [
+                    "layer_start",
+		    "o_linear"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "ffn_norm",
+                "op_type": "RMSNorm",
+		"combo": "FFN",
+		"formual": "",
+                "inputs": [
+                    "attn_residual"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "mlp_w1_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "FFN",
+		"formula": "ColumnParallelLinear[hidden_size, intermediate_size]", 
+                "inputs": [
+                    "ffn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "mlp_w3_linear",
+                "op_type": "ColumnParallelLinear",
+		"combo": "FFN",
+		"formula": "ColumnParallelLinear[hidden_size, intermediate_size]",
+                "inputs": [
+                    "ffn_norm"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "mlp_act",
+                "op_type": "Silu",
+		"combo": "FFN",
+		"formula": "silu(x)",
+                "inputs": [
+                    "mlp_w1_linear"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "ffn_elmul",
+                "op_type": "Elmul",
+		"combo": "FFN",
+		"formula": "ElementMul",
+                "inputs": [
+		    "mlp_act",
+		    "mlp_w3_linear"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "mlp_w2_linear",
+                "op_type": "RowParallelLinear",
+		"combo": "FFN",
+		"formula": "RowParallelLinear[intermediate_size, hidden_size]",
+                "inputs": [
+                    "ffn_elmul"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "mlp_residual",
+                "op_type": "Add",
+		"combo": "FFN",
+                "inputs": [
+		    "attn_residual",
+		    "mlp_w2_linear"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "layer_end",
+                "op_type": "Dummy",
+		"combo": "FFN",
+                "inputs": [
+                    "mlp_residual"
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "last_layernorm",
+                "op_type": "RMSNorm",
+		"formula": "RMSNorm",
+		"combo": "Output",
+                "inputs": [
+                    "layer_end"
+                ],
+                "outputs": [
+                ]
+            },
+
+            {
+                "name": "output",
+		"op_type": "ColumnParallelLinear",
+		"combo": "Output",
+                "formula": "ColumnParallelLinear[hidden_size, vocab_size]",
+                "inputs": [
+		    "last_layernorm"
+                ],
+                "outputs": [
+                ]
+            }
+	    
+	]
+    }
+}

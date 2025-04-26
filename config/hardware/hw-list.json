@@ -1,0 +1,7 @@
+{
+    "hardwares": [
+	"nvidia/H100SXM",
+	"nvidia/H100NVL",
+	"nvidia/A100"
+    ]
+}

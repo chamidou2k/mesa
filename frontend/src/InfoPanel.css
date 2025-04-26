@@ -1,0 +1,96 @@
+.info-panel-container {
+    font-size: 9px;
+    font-family: monospace;
+    line-height: 1;
+    background-color: #f0fff0;
+    padding: 4px;
+    height: 100%;
+}
+
+.info-panel-container h5 {
+    font-size: 10px;
+    margin: 4px 0 8px;
+    color: #2d5c2a;
+}
+
+.columns-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.section-column {
+    background: white;
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid #b2d8b0;
+}
+
+.metric-table {
+    --row-vertical-padding: 2px;
+    --row-horizontal-padding: 4px;
+    border: 1px solid #b2d8b0;
+    background: #f0fff0;
+}
+
+.table-header {
+    padding: var(--row-vertical-padding) var(--row-horizontal-padding);
+    background-color: #e0f0e0;
+    border-bottom: 1px solid #9ac899;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+}
+
+.metric-row {
+    padding: var(--row-vertical-padding) var(--row-horizontal-padding);
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 18px;
+    display: grid;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.metric-key {
+    font-weight: 500;
+    color: #2c3e50;
+    white-space: nowrap;
+    min-width: 80px;
+    padding-left: 4px;
+    font-size: 10px;
+}
+
+.metric-value {
+    color: #7f8c8d;
+    font-family: monospace;
+    font-size: 9px;
+}
+
+.array-value {
+    font-size: 0.9em;
+    line-height: 1;
+    padding: 0 2px;
+}
+
+select, input[type="number"] {
+    width: 80px;
+    height: 22px;
+    padding: 2px 4px;
+    border: 1px solid #c4dcc1;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: monospace;
+}
+
+select {
+    padding-right: 20px;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'><path fill='%232d5c2a' d='M7 10l5 5 5-5z'/></svg>") no-repeat right 4px center/12px;
+}
+
+@media (max-width: 768px) {
+    .config-section.compact > label > select {
+        min-width: 120px;
+        max-width: 180px;
+    }
+}

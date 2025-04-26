@@ -1,0 +1,51 @@
+{
+  "hardware_name": "H100 NVL", 
+  "hardware_type": "GPU", 
+  "FP64_supported": true, 
+  "TF64_supported": true, 
+  "FP32_supported": true, 
+  "TF32_supported": true, 
+  "FP16_supported": true, 
+  "BF16_supported": true, 
+  "FP8_supported": true, 
+  "FP6_supported": false, 
+  "INT8_supported": true, 
+  "FP4_supported": false,  
+
+  "FP64_sparsity": false,  
+  "TF64_sparsity": false,  
+  "FP32_sparsity": false,  
+  "TF32_sparsity": true, 
+  "FP16_sparsity": true, 
+  "BF16_sparsity": true, 
+  "FP8_sparsity": true, 
+  "FP6_sparsity": false, 
+  "INT8_sparsity": true, 
+  "FP4_sparsity": false,  
+
+  "FP64_TFLOPS": 30,  
+  "TF64_TFLOPS": 60, 
+  "FP32_TFLOPS": 60, 
+  "TF32_TFLOPS": 1671,  
+  "FP16_TFLOPS": 1671,  
+  "BF16_TFLOPS": 1671, 
+  "FP8_TFLOPS": 3341, 
+  "FP6_TFLOPS": null, 
+  "INT8_TOps": 3341, 
+  "FP4_TFLOPS": null,  
+
+  "Tier1_memory_type": "HBM2e", 
+  "Tier1_memory_capacity": "94GB", 
+  "Tier1_memory_bandwidth": "3.9TBps", 
+
+  "Tier2_memory_present" : false, 
+  "Tier2_memory_type": null, 
+  "Tier2_memory_capacity": null, 
+  "Tier2_memory_bandwidth": null,
+	
+  
+  "scaleup_link" : "NVLink",
+  "scaleup_link_bandwidth": "900GBps", 
+  "host_interface": "x16 PCIe Gen5",
+  "TDP": "350W"
+}
