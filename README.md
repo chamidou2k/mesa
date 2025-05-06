@@ -102,7 +102,7 @@ cd ../frontend
 npm install
 ```
 #### Configure Backend API address
-Update backend API address in `.env` file:
+Rename `.env.example` to `.env`, then update backend API address in `.env` file:
 ```env
 VITE_BACKEND_API_BASE=http://localhost:9090
 ```
