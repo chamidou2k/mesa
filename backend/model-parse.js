@@ -248,6 +248,8 @@ function run_model_eval(config) {
 
     const hw_spec = {
 	flops:  calculateFLOPS(hw_spec_para, "FP16"), //hw_spec_para.FP16_TFLOPS * Math.pow(10,12), //989T
+	fp8_flops: calculateFLOPS(hw_spec_para, "FP8"), //hw_spec_para.FP8_TFLOPS * Math.pow(10,12), //989T
+	int8_flops: calculateFLOPS(hw_spec_para, "INT8"), //hw_spec_para.INT8_TOps * Math.pow(10,12), //989T
 	mem_size: convertMemoryCapacity(hw_spec_para.Tier1_memory_capacity), //80 * Math.pow(10, 9), 
 	mem_bw: convertBandwidth(hw_spec_para.Tier1_memory_bandwidth), //3.352 * Math.pow(10, 12), //3.2T
 	mem_bw_util: 0.9,

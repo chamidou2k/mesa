@@ -65,6 +65,7 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
         break;
     case 'concat':
         {
+	    
             let round = in_shape.reduce((acc, item) => Array.isArray(item) ? acc + item.reduce((a, b) => a * b, 1) : acc * item, 1);
             flops = 0;
             in_para = round;
@@ -186,12 +187,13 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
             let part_b = w_shape.slice(1);
             out_shape = part_a.concat(part_b);
             out_para = out_shape.reduce((acc, item) => acc * item, 1);
-            flops_n = flops;
-            in_para_n = in_para;
-            out_para_n = out_para;
+            flops_n = flops * world_size;
+            in_para_n = in_para * world_size; //replicated
+            out_para_n = out_para * world_size; //replicated
             in_shape_n = [...in_shape];
+	    //in_shape_n[in_shape_n.length -1] *= world_size;
             out_shape_n = [...out_shape];
-            weight_para_n = weight_para;
+            weight_para_n = weight_para * world_size; //replicated
             break;
         }
     case 'einsum':  	
@@ -251,6 +253,23 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
             out_shape_n[out_shape_n.length -1] *= world_size;
         }
         break;
+    case 'ElementwiseAdd':
+        {
+            valid = true;
+	    let in_para = in_shape[0].reduce((acc, v) => acc * v, 1) * 2;
+	    in_para *= 2;
+	    let out_para = in_shape[0].reduce((acc, v) => acc * v, 1);
+	    let flops = in_shape[0].reduce((acc, v) => acc * v, 1);
+	    out_shape = [...in_shape[0]];
+	    out_para = out_shape.reduce((acc, item) => acc * item, 1);
+	    flops_n = flops * world_size;
+	    in_shape_n = [...in_shape[0]];
+	    out_shape_n = [...out_shape];
+	    in_para_n = in_para * world_size;
+	    out_para_n = out_para * world_size;
+	}
+        break;
+
     case "RMSNorm":
         valid = true;
         base = in_shape.reduce((acc, item) => acc * item, 1);

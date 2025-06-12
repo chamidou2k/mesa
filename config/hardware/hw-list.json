@@ -2,6 +2,11 @@
     "hardwares": [
 	"nvidia/H100SXM",
 	"nvidia/H100NVL",
+	"nvidia/H200SXM",
+	"nvidia/H200NVL",
+	"nvidia/H20SXM",
+	"nvidia/H800SXM",
+	"nvidia/H800",
 	"nvidia/A100"
     ]
 }
