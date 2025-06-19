@@ -63,6 +63,27 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
             out_para_n = out_para * world_size;
         }
         break;
+
+    case 'Router':
+        {
+            let round = in_shape.reduce((acc, item) => acc * item, 1);
+            in_para = round;  //batch_size * seq_len * n_routed_experts
+            out_para = in_shape[0] * w_shape[1] * w_shape[2] * 2; //batch_size * n_routed_experts * topk * 2 (weights, indices)
+            flops = round * w_shape[1] + round * (w_shape[1] - 1) + round; //scores = linear(x, weight) = 2 * batch_size * seq_len * n_routed_experts 
+            flops += round * w_shape[1] * 4 / w_shape[0]; // softmax = batch_size * seq_len * n_routed_experts * (4 ~ 5 )
+            flops += round * w_shape[1] * 1 / w_shape[0]; // scores = scores + bias = batch_size * seq_len * n_routed_experts
+            flops_n = flops * world_size;
+            out_shape = [...in_shape];
+            weight_para = w_shape[0] * w_shape[1];
+            weight_para_n = weight_para * world_size;
+            in_shape_n = [...in_shape]; 
+            out_shape_n = [...out_shape];
+            in_shape_n[in_shape_n.length -1] *= world_size;
+            out_shape_n[out_shape_n.length -1] *= world_size;
+            in_para_n = in_para * world_size;
+            out_para_n = out_para * world_size;
+        }
+        break;
     case 'concat':
         {
 	    
