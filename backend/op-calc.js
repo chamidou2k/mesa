@@ -27,14 +27,6 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
         in_shape_n = [...in_shape];
         out_shape = [...out_shape_n];
         break;
-    case 'Router':
-        in_para = 0;
-        out_para = 0;
-        weight_para = 0;
-        out_shape_n = [...in_shape];
-        in_shape_n = [...in_shape];
-        out_shape = [...out_shape_n];
-        break;
     case 'all_reduce':
         in_para = 0; 
         out_para = 0;
@@ -323,6 +315,7 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
         out_shape = [...in_shape];
         out_para = base;
         weight_para = 2 * in_shape[in_shape.length - 1];
+        break;
     case "Add":
         valid = true;
         base = in_shape.reduce((acc, item) => acc * item, 1);
@@ -374,9 +367,6 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
         in_shape_n[in_shape_n.length -1] *= world_size;
         out_shape_n[out_shape_n.length -1] *= world_size;
         break;
-    case "moe_router":
-        valid = true;
-        break;
     default:
         break;
     }
@@ -418,6 +408,21 @@ function op_eval(op_type, in_shape, {w_shape = null,  world_size = 1, kv = false
     //console.log(`${op_type} block_op: ${JSON.stringify(dev_op)}`);
     //console.log(`${op_type} dev_op: ${JSON.stringify(node_op)}`);
     return { node: node_op, dev: dev_op };
+}
+// Breakdown op_eval function to handle compose_ops and base ops separately to better manage complexity and maintainability
+// This allows for easier extension in the future if more complex operations are added along llm evolution.
+function op_eval(op_type, in_shape, {w_shape = null, world_size = 1, kv = false, input_seq = 0, output_seq = 0, outputs = null}) {
+    if (op_type === 'compose_ops') {
+        return compose_ops_eval(op_type, in_shape, {w_shape, world_size, kv, input_seq, output_seq, outputs});
+    }
+    return base_ops_eval(op_type, in_shape, {w_shape, world_size, kv, input_seq, output_seq, outputs});
+}
+function compose_ops_eval(op_type, in_shape, {w_shape = null, world_size = 1, kv = false, input_seq = 0, output_seq = 0, outputs = null}) {
+    return base_ops_eval(op_type, in_shape, {w_shape, world_size, kv, input_seq, output_seq, outputs});
+}
+function base_ops_eval(op_type, in_shape, {w_shape = null, world_size = 1, kv = false, input_seq = 0, output_seq = 0, outputs = null}) {
+    const { node, dev } = op_eval(op_type, in_shape, {w_shape, world_size, kv, input_seq, output_seq, outputs});
+    return { node: node, dev: dev };
 }
 module.exports = {
     op_eval
